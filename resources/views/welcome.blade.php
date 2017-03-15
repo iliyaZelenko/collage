@@ -54,6 +54,8 @@
     <script src="https://cdn.socket.io/socket.io-1.3.4.js"></script>
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script>
+        var params = getSearchParameters();
+
         window.Laravel = {
             csrfToken: '{{ csrf_token() }}',
             appName: '{{ config('app.name') }}',
@@ -64,11 +66,15 @@
                 'X-CSRF-TOKEN': window.Laravel.csrfToken
             }
         });
-
-
+        $('#form-send-message__user-name-input').val( params.username );
 
         var socket = io.connect('http://ilya.local.com:3000/');
 //        var socket = io();
+
+        socket.emit('userConnect', {
+            username: params.username
+        });
+
 
 
 
@@ -76,25 +82,28 @@
             var user = $('#form-send-message__user-name-input').val();
             var msg = $('#form-send-message__msg-box-input').val();
 
+            console.log(user);
+            console.log(msg);
+
             if (msg) {
-                socket.emit('message', {
-                    message: msg,
-                    user: user
-                });
-                {{--$.ajax({--}}
-                    {{--type: 'POST',--}}
-                    {{--url: '{!! URL::to('sendmessage') !!}',--}}
-                    {{--dataType: 'json',--}}
-//                    data: {
+//                socket.emit('message', {
+//                    message: msg,
+//                    user: user
+//                });
+                $.ajax({
+                    type: 'POST',
+                    url: '{!! URL::to('sendmessage') !!}',
+                    dataType: 'json',
+                    data: {
 //                        _token: window.Laravel.csrfToken,
-//                        message: msg,
-//                        user: user
-//                    },
-                    {{--success: function(data) {--}}
-                        {{--console.log('Success', data);--}}
-                        {{--$('#form-send-message__msg-box-input').val('');--}}
-                    {{--}--}}
-                {{--});--}}
+                        message: msg,
+                        user: user
+                    },
+                    success: function(data) {
+                        console.log('Success', data);
+                        $('#form-send-message__msg-box-input').val('');
+                    }
+                });
             } else {
                 alert('Please Add Message.');
             }
@@ -102,16 +111,29 @@
             return false;
         });
 
-        socket.on('message', function (data) {
-//            var data = JSON.parse(dataJson);
-            console.log(data.user);
-            $('#messages-container').append(`
-                <li class="list-group-item">
-                    <span>[${data.user}]:</span>
-                    <span>${data.message}</span>
-                </li>
-            `);
+        socket.on('message', function (dataJson) {
+            var data = JSON.parse(dataJson);
+            console.log(data);
+
+            $('#messages-container').append(`<li class="list-group-item">
+                [${data.user}]: ${data.message}
+            </li>`);
         });
+
+        function getSearchParameters() {
+            var prmstr = window.location.search.substr(1);
+            return prmstr != null && prmstr != "" ? transformToAssocArray(prmstr) : {};
+        }
+
+        function transformToAssocArray( prmstr ) {
+            var params = {};
+            var prmarr = prmstr.split("&");
+            for ( var i = 0; i < prmarr.length; i++) {
+                var tmparr = prmarr[i].split("=");
+                params[tmparr[0]] = tmparr[1];
+            }
+            return params;
+        }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
